@@ -1,0 +1,27 @@
+# IDEs
+.idea/
+*.iml
+
+# Python environments, bytecode, and build artifacts
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+/build/
+/dist/
+
+# Development caches
+.pytest_cache/
+.ruff_cache/
+
+# Local credentials and environment variables
+/browser.json
+.env
+.env.*
+!.env.example
+
+# Local playlist inputs and generated import files
+/playlists/*.txt
+/import_report.csv
+/search_cache.json
+.*.tmp
