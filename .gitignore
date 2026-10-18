@@ -15,13 +15,15 @@ __pycache__/
 .ruff_cache/
 
 # Local credentials and environment variables
-/browser.json
+browser.json
+oauth.json
 .env
 .env.*
 !.env.example
 
 # Local playlist inputs and generated import files
-/playlists/*.txt
-/import_report.csv
-/search_cache.json
+/*.txt
+/playlists*/*.txt
+import_report*.csv
+search_cache*.json
 .*.tmp

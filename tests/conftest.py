@@ -10,7 +10,7 @@ from ytm_import.config import ImportConfig
 
 
 @pytest.fixture(autouse=True)
-def block_external_side_effects(monkeypatch):
+def block_external_side_effects(monkeypatch, tmp_path):
     def unexpected_request(*args, **kwargs):
         raise AssertionError("Unit tests must not make network requests")
 
@@ -19,6 +19,10 @@ def block_external_side_effects(monkeypatch):
 
     monkeypatch.setattr("requests.sessions.Session.request", unexpected_request)
     monkeypatch.setattr("time.sleep", unexpected_sleep)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".xdg-config"))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / ".xdg-cache"))
+    monkeypatch.setenv("APPDATA", str(tmp_path / ".appdata"))
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / ".localappdata"))
 
 
 @pytest.fixture

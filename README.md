@@ -1,12 +1,49 @@
 # YouTube Music Bulk Import
 
-Import text-file playlists into YouTube Music. Each `.txt` file in `playlists/`
-becomes a separate playlist, with the filename (without `.txt`) used as its
-title.
+Import text-file playlists into YouTube Music. Each `.txt` file becomes a
+separate playlist, with the filename (without `.txt`) used as its title.
+
+## Quick start (`uvx` / `pipx`)
+
+You can run `ytm-import` on any machine with [uv](https://docs.astral.sh/uv/) or
+[pipx](https://pipx.pypa.io/) without cloning the repository or creating a
+virtual environment.
+
+Run directly from GitHub in a directory containing your `.txt` playlist files
+(or pass `.txt` files / directories as arguments):
+
+```sh
+uvx --from git+https://github.com/valentinsviridov/ytm-import ytm-import
+```
+
+Or with `pipx`:
+
+```sh
+pipx run --spec git+https://github.com/valentinsviridov/ytm-import ytm-import
+```
+
+You can also pass specific `.txt` files or directories:
+
+```sh
+uvx --from git+https://github.com/valentinsviridov/ytm-import ytm-import Jazz.txt Grunge.txt
+```
+
+- **First-run authentication:** If no `browser.json` credentials exist yet,
+  `ytm-import` interactively prompts you to paste your YouTube Music browser
+  request headers, saves them to your user config directory
+  (`~/.config/ytm-import/browser.json`, or `%APPDATA%\ytm-import\browser.json`
+  on Windows), and immediately proceeds with the import.
+- **Persistent search cache:** Search results are cached in your user cache
+  directory (`~/.cache/ytm-import/search_cache.json`, or
+  `%LOCALAPPDATA%\ytm-import\search_cache.json` on Windows) so subsequent runs
+  from any folder reuse cached matches. (If `./browser.json` or
+  `./search_cache.json` exists in the current directory, it is used instead.)
+- **Re-authenticating:** Pass `--reauth` at any time if your browser session
+  expires.
 
 ## Requirements
 
-- [uv](https://docs.astral.sh/uv/getting-started/installation/).
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) or [pipx](https://pipx.pypa.io/).
 - A YouTube Music account signed in through your browser.
 
 The project supports Python 3.10 or newer. `.python-version` selects Python 3.14
@@ -30,7 +67,7 @@ ytm-import/
 │       ├── storage.py    # Playlist and cache files
 │       └── importer.py   # Track selection and import orchestration
 ├── tests/
-├── browser.json          # Local credentials, created during setup
+├── browser.json          # Optional local credentials override
 └── playlists/
     ├── README.md
     ├── Jazz.txt
@@ -38,7 +75,7 @@ ytm-import/
     └── Ambient.txt
 ```
 
-## Setup
+## Local setup (when running from a clone)
 
 Open a terminal in the project directory and install the locked dependencies:
 
@@ -57,13 +94,12 @@ inspections use the project's Python version and installed packages. See the
 [JetBrains Python SDK guide](https://www.jetbrains.com/help/idea/configuring-python-sdk.html).
 IDE settings stay local and are excluded from version control.
 
-Create the local authentication file:
+## Authentication details
 
-```sh
-uv run ytmusicapi browser
-```
-
-When prompted with `Please paste the request headers from Firefox or Chrome/Edge and press Ctrl-D to continue:`, copy the **Request Headers** from an authenticated YouTube Music API call:
+On your first run (or when running `ytm-import --reauth` or
+`uv run ytmusicapi browser`), you will be prompted with
+`Please paste the request headers from Firefox or Chrome/Edge and press Ctrl-D to continue:`.
+Copy the **Request Headers** from an authenticated YouTube Music API call:
 
 1. Open [YouTube Music](https://music.youtube.com) in Firefox, Chrome, or Edge and make sure you are signed in.
 2. Open Developer Tools (`F12` or `Ctrl+Shift+I` on Linux/Windows, `Cmd+Option+I` on macOS) and switch to the **Network** tab.
@@ -84,8 +120,9 @@ upload it to cloud storage or GitHub. It is excluded by `.gitignore`.
 
 ## Prepare your playlists
 
-Place your `.txt` files in the `playlists/` directory next to the script. Use one
-song per line, preferably including both the artist and song title:
+Place your `.txt` files in a `playlists/` directory, in the current working
+directory, or pass their paths directly on the command line. Use one song per
+line, preferably including both the artist and song title:
 
 ```text
 Miles Davis — So What
@@ -108,9 +145,9 @@ uv run ytm-import
 
 `uv run python -m ytm_import` also works.
 
-Run the command from the project directory because input, authentication, and
-output paths are relative to the current directory.
-
+- By default, `ytm-import` reads `.txt` files from `./playlists` if that
+  directory exists, or falls back to `.txt` files in the current directory. You
+  can also pass `.txt` files or directories as positional arguments.
 - The filename without `.txt` becomes the playlist title.
 - Playlists are created as `PRIVATE` by default.
 - An existing playlist you own with the same title is continued, ignoring case.
@@ -142,8 +179,8 @@ uv run ytm-import --privacy UNLISTED
 uv run ytm-import --privacy PUBLIC
 ```
 
-Use `uv run ytm-import --help` to see options for input, authentication, report,
-and cache paths, as well as the minimum confidence score.
+Use `uv run ytm-import --help` to see options for input, authentication,
+`--reauth`, report, and cache paths, as well as the minimum confidence score.
 
 ## Import report
 
