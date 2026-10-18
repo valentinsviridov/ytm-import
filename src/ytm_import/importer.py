@@ -30,6 +30,24 @@ class ReportRow:
     status: str = "NOT_FOUND"
 
 
+def _format_row(row: ReportRow) -> str:
+    if row.matched_artists and row.matched_title:
+        matched = f"{row.matched_artists} - {row.matched_title}"
+    else:
+        matched = row.matched_title or row.matched_artists
+    if matched:
+        return f"  {row.status:24} {row.source} -> {matched}"
+    return f"  {row.status:24} {row.source}"
+
+
+def _is_already_in_playlist(response: object) -> bool:
+    """Detect YouTube Music's duplicate-track rejection when duplicates=False."""
+    if not isinstance(response, dict) or response.get("status") != "STATUS_FAILED":
+        return False
+    actions = response.get("actions")
+    return isinstance(actions, list) and "DEDUPE_OPTION_SKIP" in str(actions)
+
+
 def _remember_track(known_tracks: dict[str, Track | None], track: Track) -> None:
     """Index exact metadata matches, leaving ambiguous names for the searcher."""
     if not track.get("videoId"):
@@ -191,6 +209,7 @@ def import_playlists(
                                 playlist_id = response
                                 playlists[playlist_title.casefold()] = playlist_id
                                 playlist_tracks[playlist_id] = []
+                                added += 1
                             else:
                                 response = client.add_playlist_items(
                                     playlist_id, [row.video_id], duplicates=False,
@@ -199,25 +218,28 @@ def import_playlists(
                                     response.get("status")
                                     if isinstance(response, dict) else response
                                 )
-                                if status != "STATUS_SUCCEEDED":
+                                if _is_already_in_playlist(response):
+                                    row = replace(row, status="ALREADY_PRESENT")
+                                elif status != "STATUS_SUCCEEDED":
                                     raise RuntimeError(
                                         f"Unable to add track to playlist {playlist_title!r}: {response}"
                                     )
+                                else:
+                                    added += 1
                             playlist_tracks[playlist_id].append(
                                 cache[normalize(row.source)]["result"]
                             )
-                            added += 1
                         except Exception as exc:
                             failed_row = replace(
                                 row, status=f"ERROR: {type(exc).__name__}: {exc}",
                             )
                             writer.writerow(asdict(failed_row))
                             report.flush()
-                            output(f"  {failed_row.status:24} {row.source}")
+                            output(_format_row(failed_row))
                             raise
                     writer.writerow(asdict(row))
                     report.flush()
-                    output(f"  {row.status:24} {row.source}")
+                    output(_format_row(row))
 
                 if playlist_id is None:
                     output("  Playlist not created: no confident song matches.")

@@ -79,6 +79,9 @@ def test_import_creates_unique_tracks_and_persists_report_and_cache(client, conf
     ]
     assert config.report_file.read_bytes().startswith(b"\xef\xbb\xbf")
     assert load_cache(config.cache_file)["missing"] == {"result": None, "score": 0.0}
+    assert "  ADDED                    Miles Davis — So What -> Miles Davis - So What" in messages
+    assert "  DUPLICATE_SKIPPED        So What -> Miles Davis - So What" in messages
+    assert "  NOT_FOUND                Missing" in messages
     assert any("CREATED: Jazz" in message for message in messages)
 
 
@@ -363,3 +366,39 @@ def test_unreadable_existing_playlist_fails_before_search_or_add(client, config)
     client.search.assert_not_called()
     client.create_playlist.assert_not_called()
     client.add_playlist_items.assert_not_called()
+
+
+def test_server_side_duplicate_rejection_is_treated_as_already_present(client, config, track):
+    source = config.playlists_dir / "Jazz.txt"
+    source.write_text("Tadd Dameron - Hot House", encoding="utf-8")
+    client.get_library_playlists.return_value = [{"title": "Jazz", "playlistId": "jazz"}]
+    client.get_playlist.return_value = {"tracks": [{"videoId": "canonical-id", "title": "Hot House"}]}
+    save_cache(config.cache_file, {"tadd dameron hot house": {"result": track, "score": 0.61}})
+    client.add_playlist_items.return_value = {
+        "status": "STATUS_FAILED",
+        "actions": [{
+            "addToToastAction": {
+                "item": {
+                    "notificationActionRenderer": {
+                        "actionButton": {
+                            "buttonRenderer": {
+                                "command": {
+                                    "playlistEditEndpoint": {
+                                        "actions": [{
+                                            "addedVideoId": track["videoId"],
+                                            "action": "ACTION_ADD_VIDEO",
+                                            "dedupeOption": "DEDUPE_OPTION_SKIP",
+                                        }]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }],
+    }
+    messages = []
+    import_playlists(client, [source], config, sleep=Mock(), output=messages.append)
+    assert read_report(config)[0]["status"] == "ALREADY_PRESENT"
+    assert any("UPDATED: Jazz — 0 songs added" in message for message in messages)

@@ -1,7 +1,8 @@
 # YouTube Music Bulk Import
 
 Import text-file playlists into YouTube Music. Each `.txt` file in `playlists/`
-becomes a separate playlist, with the filename used as its title.
+becomes a separate playlist, with the filename (without `.txt`) used as its
+title.
 
 ## Requirements
 
@@ -63,12 +64,21 @@ Create the local authentication file:
 uv run ytmusicapi browser
 ```
 
-Follow the prompts. Open [YouTube Music](https://music.youtube.com), sign in,
-open your browser's developer tools, and select the **Network** tab. Find an
-authenticated `POST` request to `/browse` and copy its request headers into the
-terminal. See the
+When prompted with `Please paste the request headers from Firefox or Chrome/Edge and press Ctrl-D to continue:`, copy the **Request Headers** from an authenticated YouTube Music API call:
+
+1. Open [YouTube Music](https://music.youtube.com) in Firefox, Chrome, or Edge and make sure you are signed in.
+2. Open Developer Tools (`F12` or `Ctrl+Shift+I` on Linux/Windows, `Cmd+Option+I` on macOS) and switch to the **Network** tab.
+3. Type `browse` into the Network filter box, then click **Library** or **Home** in YouTube Music so a new request appears.
+4. Click an authenticated `POST` request to `music.youtube.com` whose path starts with `/youtubei/v1/browse` (status `200`).
+5. Open that request's **Headers** tab and locate the **Request Headers** section (do **not** use "Copy as cURL", "Copy as fetch", or **Response Headers**):
+   - **Firefox**: Enable the **Raw** toggle on the **Request Headers** section, then select and copy the `Key: Value` header lines under **Request Headers** (omitting the first `POST /youtubei/v1/browse... HTTP/2` request line; `ytm-import` also strips that line automatically if included).
+   - **Chrome / Edge**: In the **Request Headers** section, select and copy all header lines directly from the panel (from the first header down to the last).
+   - Make sure the copied headers include `authorization` (starting with `SAPISIDHASH`), `cookie` (containing `__Secure-3PAPISID`), and `x-goog-authuser`.
+6. Paste the copied headers into the terminal, press `Enter`, and press `Ctrl-D` (or `Enter`, `Ctrl-Z`, `Enter` on Windows) to save `browser.json`.
+
+See the
 [ytmusicapi browser authentication guide](https://ytmusicapi.readthedocs.io/en/stable/setup/browser.html)
-for browser-specific instructions.
+for additional troubleshooting details.
 
 `browser.json` contains your browser session credentials. Do not share it or
 upload it to cloud storage or GitHub. It is excluded by `.gitignore`.

@@ -52,3 +52,23 @@ def save_cache(path: Path, cache: SearchCache) -> None:
     finally:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
+
+
+def sanitize_auth_file(path: Path) -> None:
+    """Remove HTTP request lines or blank keys left by ytmusicapi browser setup."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return
+    if not isinstance(data, dict):
+        return
+    cleaned = {
+        key: value
+        for key, value in data.items()
+        if isinstance(key, str) and key and not any(ch.isspace() for ch in key)
+    }
+    if len(cleaned) != len(data):
+        path.write_text(
+            json.dumps(cleaned, ensure_ascii=True, indent=4, sort_keys=True),
+            encoding="utf-8",
+        )

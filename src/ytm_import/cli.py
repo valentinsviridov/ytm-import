@@ -9,7 +9,7 @@ from ytmusicapi import YTMusic
 from .client import MusicClient
 from .config import ImportConfig
 from .importer import import_playlists
-from .storage import find_playlist_files
+from .storage import find_playlist_files, sanitize_auth_file
 
 
 def main(
@@ -54,12 +54,17 @@ def main(
         if not config.auth_file.is_file():
             raise SystemExit(
                 f"Authentication file does not exist: {config.auth_file}. "
-                "Run: uv run ytmusicapi browser"
+                "Run 'uv run ytmusicapi browser' and paste the Request Headers "
+                "from an authenticated POST /youtubei/v1/browse request on "
+                "https://music.youtube.com (DevTools -> Network -> Headers -> "
+                "Request Headers, including 'authorization', 'cookie', and "
+                "'x-goog-authuser')."
             )
         try:
             files = find_playlist_files(config.playlists_dir)
         except (FileNotFoundError, ValueError) as exc:
             raise SystemExit(str(exc)) from exc
 
+        sanitize_auth_file(config.auth_file)
         client = client_factory(str(config.auth_file))
         import_playlists(client, files, config)
