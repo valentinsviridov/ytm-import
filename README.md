@@ -20,7 +20,6 @@ ytm-import/
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
-├── ytmusic_bulk_import.py # Compatibility entry point
 ├── src/
 │   └── ytm_import/
 │       ├── cli.py        # Command-line arguments and authentication
@@ -107,8 +106,7 @@ run the full import:
 uv run ytm-import
 ```
 
-The existing `uv run ytmusic_bulk_import.py` command and
-`uv run python -m ytm_import` also work.
+`uv run python -m ytm_import` also works.
 
 Run the command from the project directory because input, authentication, and
 output paths are relative to the current directory.
